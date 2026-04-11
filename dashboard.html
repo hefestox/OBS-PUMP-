@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>OBS Pump Sniper Bot - Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #181818;
+            color: #f1f1f1;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            background: #111;
+            padding: 20px 0 10px 0;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 8px #000a;
+        }
+        .header h1 {
+            color: #00e676;
+            margin: 0;
+            font-size: 2.2em;
+            letter-spacing: 1px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 30px auto 20px auto;
+            background: #232323;
+            padding: 30px 20px 20px 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 16px #000a;
+        }
+        h2 {
+            color: #00bfae;
+            margin-top: 32px;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: #181818;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 8px 6px;
+            text-align: center;
+        }
+        th {
+            background: #222;
+            color: #00e676;
+            font-weight: 600;
+        }
+        .pnl-pos { color: #00e676; font-weight: bold; }
+        .pnl-neg { color: #ff5252; font-weight: bold; }
+        .status {
+            margin-bottom: 18px;
+            font-size: 1.1em;
+            background: #181818;
+            padding: 12px 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px #0005;
+        }
+        .top-movers { margin-top: 30px; }
+        .loading {
+            text-align: center;
+            margin: 30px 0;
+            font-size: 1.2em;
+            color: #00e676;
+        }
+        .alert-pump {
+            background: linear-gradient(90deg, #00e676 60%, #00bfae 100%);
+            color: #181818;
+            font-weight: bold;
+            font-size: 1.2em;
+            text-align: center;
+            padding: 12px 0;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            box-shadow: 0 2px 8px #00e67644;
+            letter-spacing: 1px;
+            display: none;
+        }
+        .prob-bar {
+            width: 100px;
+            height: 12px;
+            background: #333;
+            border-radius: 6px;
+            margin: 0 auto;
+            overflow: hidden;
+            box-shadow: 0 1px 4px #0005;
+        }
+        .prob-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffea00, #00e676);
+        }
+        .destaque {
+            background: #1b2a1b;
+            border-left: 4px solid #00e676;
+            padding: 10px 14px;
+            margin-bottom: 18px;
+            border-radius: 8px;
+            font-size: 1.08em;
+        }
+        .dica {
+            background: #222;
+            color: #ffea00;
+            border-radius: 6px;
+            padding: 7px 12px;
+            margin: 10px 0 18px 0;
+            font-size: 1em;
+            text-align: center;
+            box-shadow: 0 1px 4px #0005;
+        }
+        .footer {
+            text-align: center;
+            color: #888;
+            font-size: 0.95em;
+            margin-top: 30px;
+            padding-bottom: 10px;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 10px 2vw; }
+            h1 { font-size: 1.3em; }
+            h2 { font-size: 1.1em; }
+            th, td { font-size: 0.95em; padding: 6px 2px; }
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>OBS Pump Sniper Bot - Dashboard</h1>
+</div>
+<div class="container">
+    <div id="alertPump" class="alert-pump">PUMP DETECTADO! 🚨</div>
+    <div class="destaque" id="destaqueEntrada" style="display:none"></div>
+    <div class="dica">Dica: Fique atento aos pares com maior volume e variação. Pumps podem acontecer a qualquer momento!</div>
+    <div class="status">
+        <strong>Atualizado às:</strong> <span id="updated_at">-</span><br>
+        <strong>Saldo:</strong> $<span id="balance">-</span> |
+        <strong>PNL Hoje:</strong> <span id="pnl_today">-</span> |
+        <strong>Trades:</strong> <span id="total_trades">-</span> |
+        <strong>Vitórias:</strong> <span id="wins">-</span> |
+        <strong>Modo:</strong> <span id="mode">-</span>
+    </div>
+    <div id="loading" class="loading">Carregando dados...</div>
+    <h2>Posições Abertas</h2>
+    <table id="open_positions">
+        <thead>
+        <tr><th>Par</th><th>Entrada</th><th>Atual</th><th>Tamanho (USDT)</th><th>Prob. Pump</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <h2>Últimos Trades</h2>
+    <table id="trade_log">
+        <thead>
+        <tr><th>Par</th><th>Tipo</th><th>PNL</th><th>Motivo</th><th>Hora</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div class="top-movers">
+        <h2>Top Movers (Volume & Variação)</h2>
+        <table id="top_movers">
+            <thead>
+            <tr><th>Par</th><th>Variação (%)</th><th>Volume</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+<div class="footer">
+    OBS Pump Sniper Bot &copy; 2026 &mdash; Status em tempo real | Powered by Flask
+</div>
+<script>
+function probabilidadePump(volume_ratio, price_change) {
+    // Exemplo simples: quanto maior volume_ratio e price_change, maior a "probabilidade"
+    let prob = Math.min(100, Math.round((volume_ratio * 10) + (Math.abs(price_change) * 2)));
+    return prob;
+}
+
+let ultimoPump = null;
+let ultimoDestaque = null;
+
+function fetchStatus() {
+    fetch('/status')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('updated_at').textContent = data.updated_at || '-';
+            document.getElementById('balance').textContent = data.balance || '-';
+            document.getElementById('pnl_today').textContent = data.pnl_today || '-';
+            document.getElementById('total_trades').textContent = data.total_trades || '-';
+            document.getElementById('wins').textContent = data.wins || '-';
+            document.getElementById('mode').textContent = data.paper ? 'PAPER' : 'REAL';
+
+            // Posições abertas com probabilidade
+            let op = data.open_positions || [];
+            let op_html = op.map(p => {
+                let prob = probabilidadePump(p.volume_ratio || 1, (p.price_change || 0));
+                return `<tr><td>${p.symbol}</td><td>${p.entry_price}</td><td>${p.current_price}</td><td>${p.size_usd}</td><td><div class='prob-bar'><div class='prob-fill' style='width:${prob}%;background:${prob>70?'#00e676':(prob>40?'#ffea00':'#ff5252')}'></div></div><span style='font-size:0.95em'>${prob}%</span></td></tr>`;
+            }).join('');
+            document.querySelector('#open_positions tbody').innerHTML = op_html || '<tr><td colspan="5">Nenhuma</td></tr>';
+
+            // Últimos trades - destaque entrada
+            let tl = data.trade_log || [];
+            let tl_html = tl.map(t => `<tr><td>${t.symbol}</td><td>${t.type}</td><td class="${t.pnl > 0 ? 'pnl-pos' : (t.pnl < 0 ? 'pnl-neg' : '')}">${t.pnl}</td><td>${t.reason}</td><td>${t.time}</td></tr>`).join('');
+            document.querySelector('#trade_log tbody').innerHTML = tl_html || '<tr><td colspan="5">Nenhum</td></tr>';
+
+            // Alerta de pump e destaque de entrada
+            let entrada = tl.find(t => t.type === 'BUY');
+            if (entrada && ultimoDestaque !== entrada.time + entrada.symbol) {
+                document.getElementById('destaqueEntrada').style.display = 'block';
+                document.getElementById('destaqueEntrada').innerHTML = `<b>Nova Entrada:</b> ${entrada.symbol} | Motivo: ${entrada.reason} | Hora: ${entrada.time}`;
+                ultimoDestaque = entrada.time + entrada.symbol;
+                document.getElementById('alertPump').style.display = 'block';
+                setTimeout(()=>{document.getElementById('alertPump').style.display='none';}, 3500);
+            }
+
+            // Top movers com volume
+            let tm = data.top_movers || [];
+            let tm_html = tm.map(m => `<tr><td>${m.symbol}</td><td>${m.change}</td><td>${m.volume || '-'}</td></tr>`).join('');
+            document.querySelector('#top_movers tbody').innerHTML = tm_html || '<tr><td colspan="3">Nenhum</td></tr>';
+        })
+        .catch(() => {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('updated_at').textContent = '-';
+        });
+}
+fetchStatus();
+setInterval(fetchStatus, 3000);
+</script>
+</body>
+</html>
