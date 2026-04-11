@@ -29,6 +29,14 @@ class Config:
     LOOKBACK_CANDLES     = 20    # Candles usados para calcular média de volume
     CANDLE_INTERVAL      = "5m"  # Intervalo dos candles
 
+    # ─── PROXY ─────────────────────────────────────────────
+    # Enable proxy to bypass Binance geo-restrictions (e.g. Railway regions).
+    # Set PROXY_ENABLED = True and provide a PROXY_URL such as:
+    #   "http://user:pass@proxy-ip:port"
+    #   "socks5://user:pass@proxy-ip:port"
+    PROXY_ENABLED = False
+    PROXY_URL     = ""          # e.g. "http://proxy-ip:port"
+
     # ─── SCANNER ───────────────────────────────────────────
     SCAN_INTERVAL = 5          # Segundos entre cada scan
 
