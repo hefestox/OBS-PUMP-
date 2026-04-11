@@ -19,7 +19,18 @@ BLACKLIST = {
 class MarketScanner:
     def __init__(self, cfg):
         self.cfg = cfg
-        self.client = Client(cfg.API_KEY, cfg.API_SECRET, testnet=cfg.TESTNET)
+        requests_params = {}
+        if getattr(cfg, 'PROXY_ENABLED', False) and getattr(cfg, 'PROXY_URL', ''):
+            requests_params['proxies'] = {
+                'http':  cfg.PROXY_URL,
+                'https': cfg.PROXY_URL,
+            }
+            log.info(f"Proxy habilitado: {cfg.PROXY_URL}")
+        self.client = Client(
+            cfg.API_KEY, cfg.API_SECRET,
+            testnet=cfg.TESTNET,
+            requests_params=requests_params or None,
+        )
         self._price_cache = {}
         self._watchlist = []
         self._last_watchlist_update = 0
