@@ -6,7 +6,7 @@ class Config:
     # ─── BINANCE API ───────────────────────────────────────
     API_KEY    = "6cE4SJ3jA5j2pJY4O8qK9YGbmlGeJzP4g6yOjjaU4eLokd9a17RGbcarzlfNQeEP"
     API_SECRET = "Waw8azHG9JYYMYMBgGiFCWXFJ8p77GDvU17LxysP518FznTICUiP1dQRbwOn9s88"
-    TESTNET    = False          # True = usa testnet da Binance
+    TESTNET    = True           # Testnet habilitado — opera no sandbox da Binance (sem dinheiro real)
 
     # ─── MODO ──────────────────────────────────────────────
     PAPER_TRADING = False        # True = simula sem dinheiro real
