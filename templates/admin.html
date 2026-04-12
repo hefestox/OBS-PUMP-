@@ -1,0 +1,13 @@
+<!DOCTYPE html><html><head><title>Admin</title></head><body>
+<h2>Painel Admin</h2>
+<table border=1><tr><th>ID</th><th>Usuário</th><th>Aprovado</th><th>Ação</th></tr>
+{% for u in users %}
+<tr><td>{{u[0]}}</td><td>{{u[1]}}</td><td>{{'Sim' if u[5] else 'Não'}}</td>
+<td>
+    {% if not u[5] %}<a href="/admin/approve/{{u[0]}}">Aprovar</a>{% endif %}
+    <a href="/admin/delete/{{u[0]}}">Excluir</a>
+</td></tr>
+{% endfor %}
+</table>
+<a href="/logout">Sair</a>
+</body></html>
