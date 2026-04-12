@@ -194,24 +194,7 @@ def dashboard():
 
 @app.route('/aporte')
 def aporte():
-    return '''
-    <html><head><title>Aporte / Assinatura</title></head>
-    <body style="background:#181818;color:#f1f1f1;font-family:Segoe UI,Arial,sans-serif;">
-    <div style="max-width:420px;margin:40px auto;background:#232323;padding:28px 22px 18px 22px;border-radius:12px;box-shadow:0 0 16px #000a;">
-    <h2 style="color:#00e676;">Aporte / Assinatura</h2>
-    <p>Para ativar seu acesso ao bot, envie o valor do plano desejado para o endereço USDT (TRC20 ou ERC20):</p>
-    <div style="background:#181818;padding:12px 8px;border-radius:8px;margin:12px 0 18px 0;font-size:1.1em;word-break:break-all;color:#00e676;">
-        0xBa4D5e87e8bcaA85bF29105AB3171b9fDb2eF9dd
-    </div>
-    <ul style="color:#ffea00;font-size:1.05em;">
-        <li>Starter: 17 USDT</li>
-        <li>Pro: 35 USDT</li>
-        <li>Elite: 87 USDT</li>
-    </ul>
-    <p style="margin-top:18px;">Após o envio, envie o comprovante para o suporte ou aguarde aprovação do admin.</p>
-    <a href="/dashboard" style="color:#00e676;">Voltar ao painel</a>
-    </div></body></html>
-    '''
+    return render_template('aporte.html')
 
 @app.route('/logout')
 def logout():
