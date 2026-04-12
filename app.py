@@ -51,18 +51,25 @@ def home():
 def login():
     error = None
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip()
         password = request.form['password']
-        with sqlite3.connect(DB_PATH) as conn:
-            c = conn.cursor()
-            c.execute('SELECT id, password FROM users WHERE username=?', (username,))
-            user = c.fetchone()
-            if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
-                session['user_id'] = user[0]
-                session['username'] = username
-                return redirect(url_for('dashboard'))
-            else:
-                error = 'Usuário ou senha inválidos.'
+        if not username or not password:
+            error = 'Usuário e senha são obrigatórios.'
+        elif len(username) < 3 or len(username) > 32:
+            error = 'Usuário deve ter entre 3 e 32 caracteres.'
+        elif len(password) < 6:
+            error = 'Senha deve ter pelo menos 6 caracteres.'
+        else:
+            with sqlite3.connect(DB_PATH) as conn:
+                c = conn.cursor()
+                c.execute('SELECT id, password FROM users WHERE username=?', (username,))
+                user = c.fetchone()
+                if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+                    session['user_id'] = user[0]
+                    session['username'] = username
+                    return redirect(url_for('dashboard'))
+                else:
+                    error = 'Usuário ou senha inválidos.'
     return render_template('login.html', error=error)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -71,11 +78,15 @@ def register():
     ref = request.args.get('ref')
     indicador_id = None
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip()
         password = request.form['password']
         indic_ref = request.form.get('indic_ref', '').strip()
-        if not indic_ref:
-            error = 'O link de indicação é obrigatório.'
+        if not username or not password or not indic_ref:
+            error = 'Todos os campos são obrigatórios.'
+        elif len(username) < 3 or len(username) > 32:
+            error = 'Usuário deve ter entre 3 e 32 caracteres.'
+        elif len(password) < 6:
+            error = 'Senha deve ter pelo menos 6 caracteres.'
         else:
             if indic_ref.startswith('http') and 'ref=' in indic_ref:
                 indic_username = indic_ref.split('ref=')[-1].split('&')[0]
@@ -111,13 +122,35 @@ def dashboard():
     if request.method == 'POST':
         with sqlite3.connect(DB_PATH) as conn:
             c = conn.cursor()
+            # Validação dos campos de API
             if 'api_key' in request.form:
-                api_key = request.form['api_key']
-                api_secret = request.form['api_secret']
-                c.execute('UPDATE users SET api_key=?, api_secret=? WHERE id=?', (api_key, api_secret, user_id))
+                api_key = request.form['api_key'].strip()
+                api_secret = request.form['api_secret'].strip()
+                if not api_key or not api_secret:
+                    print('API KEY e SECRET são obrigatórios.')
+                else:
+                    c.execute('UPDATE users SET api_key=?, api_secret=? WHERE id=?', (api_key, api_secret, user_id))
+            # Validação dos parâmetros de estratégia
             for p in parametros:
                 if p in request.form:
-                    c.execute(f'UPDATE users SET {p}=? WHERE id=?', (request.form[p], user_id))
+                    val = request.form[p]
+                    try:
+                        val_float = float(val)
+                        if p == 'take_profit_pct' and not (0.1 <= val_float <= 20):
+                            print('Take Profit fora do intervalo.')
+                            continue
+                        if p == 'stop_loss_pct' and not (0.1 <= val_float <= 10):
+                            print('Stop Loss fora do intervalo.')
+                            continue
+                        if p == 'min_volume_ratio' and not (1 <= val_float <= 10):
+                            print('Volume Ratio fora do intervalo.')
+                            continue
+                        if p == 'min_price_change_pct' and not (0.1 <= val_float <= 10):
+                            print('Price Change fora do intervalo.')
+                            continue
+                        c.execute(f'UPDATE users SET {p}=? WHERE id=?', (val_float, user_id))
+                    except ValueError:
+                        print(f'Valor inválido para {p}:', val)
             conn.commit()
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
