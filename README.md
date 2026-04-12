@@ -87,3 +87,41 @@ Sai automaticamente quando qualquer condição for atingida:
 Este bot é fornecido para fins educacionais.
 Trading de criptomoedas envolve risco de perda total do capital.
 **Sempre teste em PAPER_TRADING antes de operar com dinheiro real.**
+
+---
+
+## 🚀 Deploy em VPS (produção)
+
+1. Clone o repositório e entre na pasta:
+   ```bash
+   git clone https://github.com/hefestox/OBS-PUMP-.git
+   cd OBS-PUMP-
+   ```
+2. (Opcional) Crie e ative um ambiente virtual:
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+3. Instale as dependências:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Configure sua API no `config.py`.
+5. (Opcional) Crie o usuário admin:
+   ```bash
+   python create_admin_user.py
+   ```
+6. Inicie tudo em background:
+   ```bash
+   chmod +x start.sh
+   ./start.sh
+   ```
+7. O painel web estará em `http://SEU_IP:5001`.
+
+---
+
+- Para logs, veja `bot.log` e `dashboard.log`.
+- Para parar tudo: `pkill -f bot.py && pkill -f gunicorn`
+- Para rodar manualmente:
+  - `python bot.py`
+  - `gunicorn -w 2 -b 0.0.0.0:5001 dashboard_server:app`
