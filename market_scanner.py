@@ -5,6 +5,7 @@ Busca automaticamente os top 50 pares USDT com mais volume.
 
 import logging
 import time
+import requests
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 
@@ -15,15 +16,100 @@ BLACKLIST = {
     "FDUSDUSDT", "DAIUSDT", "EURUSDT", "GBPUSDT",
 }
 
+# ---------------------------------------------------------------------------
+# Free SOCKS5 proxy pool — rotated on each Client build attempt.
+# These are well-known public SOCKS5 relays; the list is tried in order and
+# the first one that successfully reaches the Binance API is kept.  When a
+# proxy stops working the scanner rebuilds the client with the next one.
+# ---------------------------------------------------------------------------
+_FREE_PROXIES = [
+    "socks5://72.195.34.58:4145",
+    "socks5://72.195.34.35:4145",
+    "socks5://98.162.25.7:31653",
+    "socks5://98.162.96.41:4145",
+    "socks5://192.111.139.165:4145",
+    "socks5://192.111.137.37:18762",
+    "socks5://184.178.172.14:4145",
+    "socks5://184.178.172.28:15294",
+    "socks5://67.201.33.9:25283",
+    "socks5://proxy.torguard.org:1080",
+]
+
+
+def _build_client(api_key: str, api_secret: str, testnet: bool,
+                  proxy_url: str = "") -> tuple["Client", str]:
+    """
+    Build a Binance Client, routing traffic through a proxy when available.
+
+    Priority:
+      1. Explicit ``proxy_url`` (from PROXY_URL env var / cfg.PROXY_URL).
+      2. Rotate through ``_FREE_PROXIES`` until one works.
+      3. Direct connection (no proxy) as a last resort.
+
+    Returns (client, proxy_used_or_"direct").
+    """
+    candidates: list[str] = []
+
+    if proxy_url:
+        candidates.append(proxy_url)          # user-supplied proxy first
+    candidates.extend(_FREE_PROXIES)
+    candidates.append("")                      # sentinel → direct connection
+
+    for proxy in candidates:
+        label = proxy if proxy else "direct"
+        try:
+            proxies = {"https": proxy, "http": proxy} if proxy else {}
+            session = requests.Session()
+            session.proxies.update(proxies)
+
+            client = Client(
+                api_key,
+                api_secret,
+                testnet=testnet,
+                requests_params={"proxies": proxies} if proxies else {},
+            )
+            # Quick connectivity check — raises on geo-block or network error
+            client.ping()
+            log.info(f"Binance conectado via {label}")
+            return client, label
+        except Exception as exc:
+            log.warning(f"Proxy {label} falhou: {exc}")
+
+    # Should never reach here because the sentinel ("") is always last,
+    # but guard anyway.
+    raise RuntimeError("Não foi possível conectar à Binance com nenhum proxy.")
+
+
+def _is_geo_blocked(exc: BinanceAPIException) -> bool:
+    """Return True when the exception looks like a Binance geo-restriction."""
+    msg = str(exc).lower()
+    return "restricted location" in msg or "eligibility" in msg or exc.status_code == 451
+
 
 class MarketScanner:
     def __init__(self, cfg):
         self.cfg = cfg
-        self.client = Client(cfg.API_KEY, cfg.API_SECRET, testnet=cfg.TESTNET)
+        self._proxy_url = getattr(cfg, "PROXY_URL", "")
+        self.client, self._active_proxy = _build_client(
+            cfg.API_KEY, cfg.API_SECRET, cfg.TESTNET, self._proxy_url
+        )
         self._price_cache = {}
         self._watchlist = []
         self._last_watchlist_update = 0
         self._watchlist_ttl = 300  # atualiza a cada 5 minutos
+
+    def _reconnect(self) -> bool:
+        """Rebuild the client, rotating to the next proxy on failure."""
+        log.warning("Tentando reconectar à Binance com novo proxy…")
+        try:
+            self.client, self._active_proxy = _build_client(
+                self.cfg.API_KEY, self.cfg.API_SECRET,
+                self.cfg.TESTNET, self._proxy_url
+            )
+            return True
+        except RuntimeError as exc:
+            log.error(f"Reconexão falhou: {exc}")
+            return False
 
     def get_top_pairs(self) -> list[str]:
         """
@@ -57,6 +143,8 @@ class MarketScanner:
 
         except BinanceAPIException as e:
             log.error(f"Erro ao buscar top pares: {e}")
+            if _is_geo_blocked(e):
+                self._reconnect()
             return self._watchlist or self.cfg.WATCHLIST
 
     def get_price(self, symbol: str) -> float:
@@ -67,6 +155,8 @@ class MarketScanner:
             return price
         except BinanceAPIException as e:
             log.error(f"Erro ao buscar preco {symbol}: {e}")
+            if _is_geo_blocked(e):
+                self._reconnect()
             return self._price_cache.get(symbol, 0.0)
 
     def get_klines(self, symbol: str):
@@ -79,6 +169,8 @@ class MarketScanner:
             return klines
         except BinanceAPIException as e:
             log.error(f"Erro ao buscar candles {symbol}: {e}")
+            if _is_geo_blocked(e):
+                self._reconnect()
             return []
 
     def analyze(self, symbol: str) -> dict | None:

@@ -2,6 +2,8 @@
 config.py — Configurações do OBS Pump Sniper Bot
 """
 
+import os
+
 class Config:
     # ─── BINANCE API ───────────────────────────────────────
     API_KEY    = "6cE4SJ3jA5j2pJY4O8qK9YGbmlGeJzP4g6yOjjaU4eLokd9a17RGbcarzlfNQeEP"
@@ -37,3 +39,8 @@ class Config:
         "AVAXUSDT", "SOLUSDT", "ARBUSDT", "OPUSDT",
         "APTUSDT", "BNBUSDT", "LINKUSDT", "FETUSDT",
     ]
+
+    # ─── PROXY ─────────────────────────────────────────────
+    # Set PROXY_URL env var to override automatic proxy rotation.
+    # Format: socks5://user:pass@host:port  or  socks5://host:port
+    PROXY_URL = os.environ.get("PROXY_URL", "")
