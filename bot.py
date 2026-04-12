@@ -89,6 +89,7 @@ def main():
     log.info(f"Banca disponível: ${risk.get_balance():.2f}")
     log.info(f"Pares monitorados: {', '.join(cfg.WATCHLIST)}")
     log.info(f"Modo: {'PAPER TRADING' if cfg.PAPER_TRADING else 'REAL'}")
+    log.info(f"Proxy ativo: {scanner._active_proxy}")
     log.info("-" * 50)
 
     open_positions = {}
