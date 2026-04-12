@@ -40,9 +40,10 @@ class RiskManager:
             return 0.0
 
     def position_size(self) -> float:
-        """Tamanho fixo por trade conforme configurado."""
+        """Tamanho fixo por trade conforme configurado, nunca menor que MIN_ENTRY_USD."""
         balance = self.get_balance()
         size    = min(self.cfg.TRADE_SIZE_USD, balance * 0.25)
+        size    = max(size, getattr(self.cfg, 'MIN_ENTRY_USD', 8.0))
         return round(size, 2)
 
     # ── Validação de entrada ───────────────────────────────
@@ -67,9 +68,10 @@ class RiskManager:
     def should_exit(self, position: dict, current_price: float) -> str | None:
         """
         Avalia se deve sair da posição.
-        Retorna: 'TAKE_PROFIT' | 'STOP_LOSS' | 'WEAK' | None
+        Retorna: 'TAKE_PROFIT' | 'STOP_LOSS' | 'MOMENTUM_LOST' | 'WEAK' | None
         """
         import time
+        from market_scanner import MarketScanner
 
         entry    = position['entry_price']
         size     = position['size_usd']
@@ -86,7 +88,25 @@ class RiskManager:
         if pct_change <= -self.cfg.STOP_LOSS_PCT:
             return "STOP_LOSS"
 
-        # Tempo máximo excedido — momentum perdido
+        # Checa momentum: se volume ou variação caírem muito em relação à entrada
+        try:
+            scanner = MarketScanner(self.cfg)
+            klines = scanner.get_klines(position['symbol'])
+            if len(klines) > 2:
+                last = klines[-1]
+                current_vol = float(last[5])
+                entry_vol = position['signal'].get('avg_volume', 1)
+                volume_ratio = current_vol / entry_vol if entry_vol > 0 else 0
+                price_now = float(last[4])
+                price_entry = entry
+                price_change = (price_now - price_entry) / price_entry * 100
+                # Sai se volume cair para menos de 60% do volume de entrada OU variação ficar negativa
+                if volume_ratio < 0.6 or price_change < 0:
+                    return "MOMENTUM_LOST"
+        except Exception as e:
+            pass
+
+        # Tempo máximo excedido — segurança
         if elapsed >= self.cfg.MAX_HOLD_SECS:
             return "WEAK"
 

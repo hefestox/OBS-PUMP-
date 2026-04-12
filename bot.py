@@ -6,18 +6,28 @@ Detecta pumps em tempo real e executa trades automaticamente.
 import time
 import json
 import logging
+import sys
+import io
 from datetime import datetime, date
 from config import Config
 from market_scanner import MarketScanner
 from trader import Trader
 from risk_manager import RiskManager
 
+
+# Força o stdout/stderr para UTF-8 (evita UnicodeEncodeError no terminal Windows)
+try:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)s | %(message)s',
     handlers=[
-        logging.FileHandler('pump_sniper.log'),
-        logging.StreamHandler()
+        logging.FileHandler('pump_sniper.log', encoding='utf-8'),
+        logging.StreamHandler(stream=sys.stdout)
     ]
 )
 log = logging.getLogger(__name__)
@@ -31,11 +41,19 @@ def save_status(cfg, risk, open_positions, trade_log, scanner):
         positions_list = []
         for symbol, pos in open_positions.items():
             current = scanner.get_price(symbol)
+            # Tenta pegar volume_ratio e price_change do sinal salvo na posição
+            volume_ratio = None
+            price_change = None
+            if 'signal' in pos:
+                volume_ratio = pos['signal'].get('volume_ratio')
+                price_change = pos['signal'].get('price_change')
             positions_list.append({
                 "symbol": symbol,
                 "entry_price": pos['entry_price'],
                 "current_price": current,
                 "size_usd": pos['size_usd'],
+                "volume_ratio": volume_ratio,
+                "price_change": price_change,
             })
 
         wins = sum(1 for t in trade_log if t['pnl'] > 0)

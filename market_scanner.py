@@ -29,6 +29,7 @@ class MarketScanner:
         """
         Busca os top 50 pares USDT com maior volume em 24h na Binance.
         Atualiza automaticamente a cada 5 minutos.
+        Agora ignora moedas com preço < 0.05 USDT.
         """
         now = time.time()
         if self._watchlist and (now - self._last_watchlist_update) < self._watchlist_ttl:
@@ -37,12 +38,20 @@ class MarketScanner:
         try:
             tickers = self.client.get_ticker()
 
-            usdt_pairs = [
-                t for t in tickers
-                if t['symbol'].endswith('USDT')
-                and t['symbol'] not in BLACKLIST
-                and float(t['quoteVolume']) > 0
-            ]
+            usdt_pairs = []
+            for t in tickers:
+                if (
+                    t['symbol'].endswith('USDT')
+                    and t['symbol'] not in BLACKLIST
+                    and float(t['quoteVolume']) > 0
+                ):
+                    # Ignora moedas muito baratas
+                    try:
+                        price = float(t.get('lastPrice') or t.get('price') or 0)
+                    except Exception:
+                        price = 0
+                    if price >= 0.05:
+                        usdt_pairs.append(t)
 
             usdt_pairs.sort(key=lambda x: float(x['quoteVolume']), reverse=True)
             top50 = [t['symbol'] for t in usdt_pairs[:50]]

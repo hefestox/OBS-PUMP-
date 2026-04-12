@@ -15,18 +15,19 @@ class Config:
     # ─── BANCA E RISCO ─────────────────────────────────────
     TOTAL_BANCA          = 51.0    # Saldo total em USDT
     TRADE_SIZE_USD       = 10.0    # Tamanho de cada trade em USDT
+    MIN_ENTRY_USD        = 8.0     # Valor mínimo de entrada em USDT
     MAX_OPEN_POSITIONS   = 5       # Máximo de posições simultâneas
     MAX_DAILY_LOSS_USD   = 5.0     # Trava o bot se perder mais que isso no dia
 
     # ─── SAÍDA ─────────────────────────────────────────────
     TAKE_PROFIT_PCT = 4.0   # Alvo de lucro (%)
-    STOP_LOSS_PCT   = 2.0   # Stop de perda (%)
-    MAX_HOLD_SECS   = 300   # Sai forçado após 5 minutos
+    STOP_LOSS_PCT   = 1.0   # Stop de perda (%)
+    MAX_HOLD_SECS   = 43200   # Sai forçado após 12 horas (43200 segundos)
 
     # ─── DETECÇÃO DE PUMP ──────────────────────────────────
-    MIN_PRICE_CHANGE_PCT = 0.5   # Variação mínima de preço em % (janela recente)
-    MIN_VOLUME_RATIO     = 1.2   # Volume atual deve ser Nx maior que a média
-    LOOKBACK_CANDLES     = 20    # Candles usados para calcular média de volume
+    MIN_PRICE_CHANGE_PCT = 1.5   # Variação mínima de preço em % (janela recente)
+    MIN_VOLUME_RATIO     = 2.0   # Volume atual deve ser Nx maior que a média
+    LOOKBACK_CANDLES     = 10    # Candles usados para calcular média de volume
     CANDLE_INTERVAL      = "5m"  # Intervalo dos candles
 
     # ─── SCANNER ───────────────────────────────────────────
