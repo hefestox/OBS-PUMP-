@@ -1,4 +1,5 @@
 
+
 print("INICIANDO FLASK - app.py")
 
 
@@ -13,6 +14,7 @@ DB_PATH = 'users.db'
 
 # --- Banco de dados ---
 def init_db():
+
     try:
         with sqlite3.connect(DB_PATH) as conn:
             c = conn.cursor()
@@ -22,25 +24,51 @@ def init_db():
                 password TEXT,
                 api_key TEXT,
                 api_secret TEXT,
-                approved INTEGER DEFAULT 0
+                approved INTEGER DEFAULT 0,
+                indicador_id INTEGER,
+                take_profit_pct REAL,
+                stop_loss_pct REAL,
+                min_volume_ratio REAL,
+                min_price_change_pct REAL,
+                saldo_lucro REAL DEFAULT 0,
+                saldo_indicacao REAL DEFAULT 0,
+                carteira TEXT,
+                plano TEXT,
+                status_saque TEXT
             )''')
-            for col in ['indicador_id', 'take_profit_pct', 'stop_loss_pct', 'min_volume_ratio', 'min_price_change_pct']:
+            # Adiciona colunas extras se não existirem
+            for col, tipo in [
+                ('indicador_id', 'INTEGER'),
+                ('take_profit_pct', 'REAL'),
+                ('stop_loss_pct', 'REAL'),
+                ('min_volume_ratio', 'REAL'),
+                ('min_price_change_pct', 'REAL'),
+                ('saldo_lucro', 'REAL DEFAULT 0'),
+                ('saldo_indicacao', 'REAL DEFAULT 0'),
+                ('carteira', 'TEXT'),
+                ('plano', 'TEXT'),
+                ('status_saque', 'TEXT')
+            ]:
                 try:
-                    c.execute(f'ALTER TABLE users ADD COLUMN {col} REAL')
+                    c.execute(f'ALTER TABLE users ADD COLUMN {col} {tipo}')
                 except sqlite3.OperationalError as e:
                     if 'duplicate column name' not in str(e):
                         print(f'Erro ao adicionar coluna {col}:', e)
+            # Tabela de aportes e saques
+            c.execute('''CREATE TABLE IF NOT EXISTS transacoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                tipo TEXT,
+                valor REAL,
+                status TEXT,
+                data TEXT,
+                carteira TEXT
+            )''')
             conn.commit()
-    {% if not u[5] %}<a href="/admin/approve/{{u[0]}}">Aprovar</a>{% endif %}
-    <a href="/admin/delete/{{u[0]}}">Excluir</a>
-</td></tr>
-{% endfor %}
-</table>
-<a href="/logout">Sair</a>
-</body></html>
-'''
+    except Exception as e:
+        print(f"ERRO ao inicializar banco de dados: {e}")
 
-# --- Rotas ---
+        # --- Rotas ---
 @app.route('/')
 def home():
     if 'user_id' in session:
@@ -154,8 +182,11 @@ def dashboard():
             conn.commit()
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
-        c.execute('SELECT api_key, api_secret, approved, ' + ', '.join(parametros) + ' FROM users WHERE id=?', (user_id,))
+        c.execute('SELECT api_key, api_secret, approved, ' + ', '.join(parametros) + ', saldo_lucro, saldo_indicacao, carteira, plano, status_saque FROM users WHERE id=?', (user_id,))
         user = c.fetchone()
+        # Histórico de transações
+        c.execute('SELECT * FROM transacoes WHERE user_id=? ORDER BY id DESC LIMIT 20', (user_id,))
+        transacoes = c.fetchall()
     indic_link = request.host_url.rstrip('/') + url_for('register') + f'?ref={username}'
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
@@ -165,7 +196,12 @@ def dashboard():
         for ind in indicados1:
             c.execute('SELECT username FROM users WHERE indicador_id=?', (ind[0],))
             indicados2[ind[1]] = [row[0] for row in c.fetchall()]
-    param_dict = dict(zip(parametros, user[3:]))
+    param_dict = dict(zip(parametros, user[3:7]))
+    saldo_lucro = user[7]
+    saldo_indicacao = user[8]
+    carteira = user[9]
+    plano = user[10]
+    status_saque = user[11]
 
     # NOVO: Exibir todos os pares disponíveis da Binance
     try:
@@ -179,18 +215,24 @@ def dashboard():
     except Exception as e:
         all_pairs = [f'Erro ao buscar pares: {e}']
 
-        return render_template(
-                'dashboard.html',
-                api_key=user[0],
-                api_secret=user[1],
-                approved=user[2],
-                indic_link=indic_link,
-                username=username,
-                indicados1=indicados1,
-                indicados2=indicados2,
-                all_pairs=all_pairs,
-                **param_dict
-        )
+    return render_template(
+        'dashboard.html',
+        api_key=user[0],
+        api_secret=user[1],
+        approved=user[2],
+        indic_link=indic_link,
+        username=username,
+        indicados1=indicados1,
+        indicados2=indicados2,
+        all_pairs=all_pairs,
+        saldo_lucro=saldo_lucro,
+        saldo_indicacao=saldo_indicacao,
+        carteira=carteira,
+        plano=plano,
+        status_saque=status_saque,
+        transacoes=transacoes,
+        **param_dict
+    )
 
 @app.route('/aporte')
 def aporte():
@@ -209,7 +251,10 @@ def admin():
         c = conn.cursor()
         c.execute('SELECT * FROM users')
         users = c.fetchall()
-    return render_template('admin.html', users=users)
+        # Buscar saques pendentes
+        c.execute('SELECT t.id, u.username, t.valor, t.status, t.data, t.carteira FROM transacoes t JOIN users u ON t.user_id=u.id WHERE t.tipo="saque" AND t.status="pendente" ORDER BY t.id DESC')
+        saques_pendentes = c.fetchall()
+    return render_template('admin.html', users=users, saques_pendentes=saques_pendentes)
 
 @app.route('/admin/approve/<int:user_id>')
 def admin_approve(user_id):
@@ -233,4 +278,4 @@ def admin_delete(user_id):
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

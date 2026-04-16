@@ -13,7 +13,7 @@ class Config:
                                 # False = opera de verdade
 
     # ─── BANCA E RISCO ─────────────────────────────────────
-    TOTAL_BANCA          = 51.0    # Saldo total em USDT
+    TOTAL_BANCA          = 43.0    # Saldo total em USDT
     TRADE_SIZE_USD       = 10.0    # Tamanho de cada trade em USDT
     MIN_ENTRY_USD        = 8.0     # Valor mínimo de entrada em USDT
     MAX_OPEN_POSITIONS   = 5       # Máximo de posições simultâneas

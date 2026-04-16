@@ -9,5 +9,20 @@
 </td></tr>
 {% endfor %}
 </table>
+<h3>Saques Pendentes</h3>
+<table border=1>
+<tr><th>ID</th><th>Usuário</th><th>Valor</th><th>Status</th><th>Data</th><th>Carteira</th><th>Ação</th></tr>
+{% for s in saques_pendentes %}
+<tr>
+    <td>{{s[0]}}</td>
+    <td>{{s[1]}}</td>
+    <td>{{s[2]}}</td>
+    <td>{{s[3]}}</td>
+    <td>{{s[4]}}</td>
+    <td>{{s[5]}}</td>
+    <td><a href="/admin/aprovar_saque/{{s[0]}}">Aprovar</a></td>
+</tr>
+{% endfor %}
+</table>
 <a href="/logout">Sair</a>
 </body></html>

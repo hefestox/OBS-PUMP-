@@ -31,6 +31,12 @@
 <body>
 <div class="dash-box">
     <h2>Painel do Usuário</h2>
+    <div style="margin-bottom:18px;">
+        <b>Plano:</b> {{ plano or 'Starter' }}<br>
+        <b>Status:</b> {% if approved %}<span class="status-aprovado">Aprovado</span>{% else %}<span class="status-pendente">Aguardando aprovação</span>{% endif %}<br>
+        <b>Saldo de Lucros:</b> <span style="color:#00e676;">{{ saldo_lucro or 0 }} USDT</span><br>
+        <b>Saldo de Indicação:</b> <span style="color:#00e676;">{{ saldo_indicacao or 0 }} USDT</span><br>
+    </div>
     <form method="post" style="margin-bottom:18px;">
         <h3 style="margin-bottom:10px;">Configuração de Estratégia</h3>
         <label>Take Profit (%)</label>
@@ -53,7 +59,21 @@
     <form action="/aporte" method="get" style="margin-bottom:18px; text-align:center;">
         <button type="submit">Fazer Aporte / Assinatura</button>
     </form>
-    <p>Status: {% if approved %}<span class="status-aprovado">Aprovado</span>{% else %}<span class="status-pendente">Aguardando aprovação</span>{% endif %}</p>
+    <div style="margin-bottom:18px;">
+        <b>Endereço de Carteira para Saque:</b><br>
+        <form method="post" action="/carteira">
+            <input name="carteira" type="text" value="{{ carteira or '' }}" placeholder="Endereço USDT (TRC20)">
+            <button type="submit">Salvar Carteira</button>
+        </form>
+    </div>
+    <div style="margin-bottom:18px;">
+        <b>Solicitar Saque:</b><br>
+        <form method="post" action="/saque">
+            <input name="valor" type="number" min="1" step="0.01" placeholder="Valor em USDT">
+            <button type="submit">Solicitar Saque</button>
+        </form>
+        <span style="font-size:0.95em;color:#aaa;">Status do último saque: {{ status_saque or 'Nenhum' }}</span>
+    </div>
     <div class="indic-link-box">
         <div>Seu link de indicação:</div>
         <div class="indic-link">{{ indic_link }}</div>
@@ -63,6 +83,21 @@
         <a href="/logout">Sair</a>
         <a href="http://127.0.0.1:5001" target="_blank">Ir para o Dashboard do Bot</a>
     </div>
+</div>
+<div class="planos">
+    <h3>Histórico de Aportes e Saques</h3>
+    <table class="plano-tabela">
+        <tr><th>Tipo</th><th>Valor</th><th>Status</th><th>Data</th><th>Carteira</th></tr>
+        {% for t in transacoes %}
+        <tr>
+            <td>{{ t[2] }}</td>
+            <td>{{ t[3] }}</td>
+            <td>{{ t[4] }}</td>
+            <td>{{ t[5] }}</td>
+            <td>{{ t[6] or '-' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
 </div>
 <div class="rede">
     <h3>Sua Rede Binária</h3>

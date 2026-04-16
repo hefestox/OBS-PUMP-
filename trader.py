@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 class Trader:
     def __init__(self, cfg):
         self.cfg    = cfg
+        # Sem proxy para evitar erro de conexão
         self.client = Client(cfg.API_KEY, cfg.API_SECRET, testnet=cfg.TESTNET)
         self._paper_positions = {}   # Para simulação
 

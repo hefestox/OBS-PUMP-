@@ -19,6 +19,7 @@ BLACKLIST = {
 class MarketScanner:
     def __init__(self, cfg):
         self.cfg = cfg
+        # Sem proxy para evitar timeout de conexão
         self.client = Client(cfg.API_KEY, cfg.API_SECRET, testnet=cfg.TESTNET)
         self._price_cache = {}
         self._watchlist = []

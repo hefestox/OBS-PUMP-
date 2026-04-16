@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 class RiskManager:
     def __init__(self, cfg):
         self.cfg    = cfg
+        # Sem proxy para evitar erro de conexão
         self.client = Client(cfg.API_KEY, cfg.API_SECRET, testnet=cfg.TESTNET)
-
         self._daily_pnl   = 0.0
         self._daily_date  = date.today()
         self._traded_today = set()
